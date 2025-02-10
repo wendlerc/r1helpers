@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Helper functions for the mechanistic interpretability of r1-like reasoning models."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["transformers", "nnsight", "scikit-learn", "rich", "matplotlib", "pandas", "tqdm", "numpy"]
+dependencies = ["torch", "torchvision", "torchaudio", "transformers", "nnsight", "scikit-learn", "rich", "matplotlib", "pandas", "tqdm", "numpy"]
 
 
 [project.optional-dependencies]
