@@ -6,7 +6,7 @@ import os
 class R1Wrapper:
     def __init__(self, model_name="deepseek-ai/DeepSeek-R1-Distill-Llama-8B", 
                        device="auto", 
-                       cache_dir="/share/u/models", 
+                       local_dir="/share/u/models", 
                        dtype=torch.bfloat16,
                        do_sample=True,
                        temperature=0.6,
@@ -34,9 +34,13 @@ class R1Wrapper:
             raise ValueError(f"Unknown tokens for model {model_name}")
 
         self.device = device
-        self.cache_dir = cache_dir
+        self.local_dir = local_dir
         self.dtype = dtype
-        self.model, self.tokenizer = self.load_model(os.path.join(cache_dir, model_name), device=device, dtype=dtype)
+        # check whether local dir exists and contains model
+        if os.path.exists(os.path.join(local_dir, model_name)):
+            self.model, self.tokenizer = self.load_model(os.path.join(local_dir, model_name), device=device, dtype=dtype)
+        else:
+            self.model, self.tokenizer = self.load_model(model_name, device=device, dtype=dtype)
         self.gen = pipeline(
             "text-generation",
             model=self.model,
@@ -76,8 +80,8 @@ class R1Wrapper:
     
 
 class R1Prompter:
-    def __init__(self, model_name="deepseek-ai/DeepSeek-R1-Distill-Llama-8B", cache_dir="/share/u/models",):
-        self.cache_dir = cache_dir
+    def __init__(self, model_name="deepseek-ai/DeepSeek-R1-Distill-Llama-8B", local_dir="/share/u/models",):
+        self.local_dir = local_dir
         self.model_name = model_name
         # Text Generation
         if "Llama" in model_name:
@@ -99,7 +103,10 @@ class R1Prompter:
         else:
             raise ValueError(f"Unknown tokens for model {model_name}")
         
-        self.tokenizer = AutoTokenizer.from_pretrained(os.path.join(cache_dir, model_name))
+        if os.path.exists(os.path.join(local_dir, model_name)):
+            self.tokenizer = AutoTokenizer.from_pretrained(os.path.join(local_dir, model_name))
+        else:
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def apply_format(self, user_message, partial_thought=None):
         toks = [self.BOS] + [self.USER] + self.tokenizer.encode(user_message, add_special_tokens=False) + [self.ASSISTANT] + [self.THINK_START] + [self.NEWLINE]
