@@ -2,6 +2,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 import torch
 import os
 
+
 class R1Wrapper:
     def __init__(self, model_name="deepseek-ai/DeepSeek-R1-Distill-Llama-8B", 
                        device="auto", 
@@ -73,8 +74,6 @@ class R1Wrapper:
 
         return outputs[0]['generated_text'], outputs[0]['generated_text'][len(text):]
     
-
-# make a wrapper but for a nnisght language model
 
 class R1Prompter:
     def __init__(self, model_name="deepseek-ai/DeepSeek-R1-Distill-Llama-8B", cache_dir="/share/u/models",):
