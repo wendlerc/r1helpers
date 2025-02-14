@@ -2,7 +2,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 import torch
 import os
 
-
+# kudos to Can Rager's post https://dsthoughts.baulab.info which was a nice starting point
 class R1Wrapper:
     def __init__(self, model_name="deepseek-ai/DeepSeek-R1-Distill-Llama-8B", 
                        device="auto", 
