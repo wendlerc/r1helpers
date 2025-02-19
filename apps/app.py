@@ -166,6 +166,7 @@ def main():
     token_spans = []
     for i, token in enumerate(token_strs):
         # Create gradient
+        token = token.strip()
         token = token.replace('<', '&lt;').replace('>', '&gt;')
         # Escape special characters
         token = token.replace('\\', '\\\\')
