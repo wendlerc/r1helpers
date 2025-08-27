@@ -1,0 +1,411 @@
+{
+  "script_info": {
+    "status": "Starting explanation script...",
+    "model": "openai/gpt-4o-mini",
+    "data_source": "/disk/u/koyena/autointerp/autointerp/crosscoders/L1-Crosscoder/L15R/ft_base_examples.pt",
+    "features_count": 100
+  },
+  "explanations": [
+    {
+      "feature_id": 18832,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 18663,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 32732,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 17615,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 7510,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 24996,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 17455,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 20781,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 20197,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 31660,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 14122,
+      "explanation": "26.3"
+    },
+    {
+      "feature_id": 10256,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 9725,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 12819,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 898,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 4118,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 25474,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 31444,
+      "explanation": "28.8"
+    },
+    {
+      "feature_id": 31673,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 17909,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 28514,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 12624,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 21870,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 14040,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 75,
+      "explanation": "96"
+    },
+    {
+      "feature_id": 636,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 10499,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 28974,
+      "explanation": "41.81"
+    },
+    {
+      "feature_id": 13415,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 15907,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 25158,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 29751,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 28081,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 22295,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 30322,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 25362,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 10635,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 13899,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 20580,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 31748,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 9702,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 1452,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 25548,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 6273,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 1199,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 6185,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 23278,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 7142,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 9233,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 23142,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 744,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 23400,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 22658,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 17393,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 12194,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 4199,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 701,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 30902,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 25135,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 31321,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 11637,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 7668,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 188,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 13670,
+      "explanation": "18"
+    },
+    {
+      "feature_id": 23274,
+      "explanation": "two"
+    },
+    {
+      "feature_id": 30520,
+      "explanation": "\\dfrac{3"
+    },
+    {
+      "feature_id": 10080,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 25878,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 11556,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 1451,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 29985,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 5217,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 27474,
+      "explanation": "9"
+    },
+    {
+      "feature_id": 22897,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 10024,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 25929,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 11145,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 30358,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 10684,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 7882,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 32252,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 23228,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 12742,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 17318,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 3069,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 26128,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 8552,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 5972,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 5292,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 31632,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 16133,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 30616,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 32591,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 4526,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 22805,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 700,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 1565,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 2840,
+      "explanation": "yes"
+    },
+    {
+      "feature_id": 21616,
+      "explanation": "no"
+    },
+    {
+      "feature_id": 243,
+      "explanation": "yes"
+    }
+  ],
+  "status": "Explanation script finished."
+}
