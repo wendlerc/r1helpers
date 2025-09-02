@@ -14,6 +14,9 @@ import torch
 import pandas as pd
 from tqdm import tqdm
 
+# Set high precision matmul for faster computation on modern GPUs
+torch.set_float32_matmul_precision('high')
+
 # %%
 model_name = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
 tokenizer = AutoTokenizer.from_pretrained(model_name)

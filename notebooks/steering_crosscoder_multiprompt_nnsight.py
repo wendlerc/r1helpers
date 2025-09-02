@@ -14,6 +14,9 @@ import torch
 import pandas as pd
 from tqdm import tqdm
 
+# Set high precision matmul for faster computation on modern GPUs
+torch.set_float32_matmul_precision('high')
+
 # %%
 model_name = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -341,7 +344,7 @@ mode2strenghts = {
 }
 modes = ["all"]  # ["all", "reactive"]
 
-n_new_toks = 200
+n_new_toks = 1024
 n_rollouts_per_prompt = 3
 
 outfile = "../results/multiple_prompts_steering_l1_crosscoder_batched.csv"
