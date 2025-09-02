@@ -30,7 +30,9 @@ torch_dtype = torch.bfloat16
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     torch_dtype=torch_dtype,
-    device_map="auto"  # This enables automatic distribution across GPUs
+    device_map="auto",
+    attn_implementation="sdpa",
+    low_cpu_mem_usage=True,
 )
 model.eval()
 # Don't use accelerator.prepare() when using device_map="auto"
@@ -127,6 +129,7 @@ def gen(lm, toks, n_new_toks=50, temperature=0.6, do_sample=True, top_p=0.95, se
         eos_token_id=tokenizer.eos_token_id,
         use_cache=True,
         return_dict_in_generate=False,
+        cache_implementation="static"
     )
     return {"sequences": output_ids}
 
@@ -198,6 +201,7 @@ def steer(lm, toks, vecs,
             eos_token_id=tokenizer.eos_token_id,
             use_cache=True,
             return_dict_in_generate=False,
+            cache_implementation="static"
         )
     finally:
         for hook in myhooks:
@@ -377,10 +381,10 @@ mode2strenghts = {
 }
 modes = ["all"]  # ["all", "reactive"]
 
-n_new_toks = 200
+n_new_toks = 1024
 n_rollouts_per_prompt = 3
 
-outfile = "../results/multiple_prompts_steering_l1_crosscoder_batched.csv"
+outfile = "../results/multiple_prompts_steering_l1_crosscoder.csv"
 
 # %%
 # filter the sequences
@@ -393,96 +397,11 @@ for d in wait_subsequences:
             toks = d["subsequence_tokens"]
             # make sure that the generated output contains "wait" as the first token of the output
             out = gen(lm, toks, n_new_toks=1, seed=d["seed"])
-            if "wait" in tokenizer.decode(out["sequences"][0]).lower():  # Updated to use ["sequences"]
+            if "wait" in tokenizer.decode(out["sequences"][0]).lower(): 
                 counts[d["prompt"]] += 1
                 seeds[d["prompt"]].add(d["seed"])
                 dataset.append(d)
 print(len(dataset))
-
-# %%
-# Pick a single sample
-d = dataset[0]
-toks = d["subsequence_tokens"]
-layer_idx = list(layer2features.keys())[0]
-fidx = next(iter(layer2featuresidcs[layer_idx].keys()))
-strength = 1.5
-
-# Reference
-ref_1 = gen(lm, toks, n_new_toks=30, do_sample=False,
-            temperature=0.0, seed=123)
-
-# Non-batched steering
-vec = layer2features[layer_idx][fidx]
-out_nb = steer(lm, toks, vecs=vec.unsqueeze(0), layer_idcs=[layer_idx], mode="all",
-               alpha=strength, n_new_toks=30, do_sample=False, temperature=0.0, seed=123)
-
-# Batched steering (B=1)
-out_b = steer_batch(lm, [toks], vecs=vec.unsqueeze(0), layer_idcs=[layer_idx], mode="all",
-                    alpha=strength, n_new_toks=30, do_sample=False, temperature=0.0, seed=123)
-
-print("Equal to ref? NB:", torch.equal(
-    out_nb["sequences"][0], ref_1["sequences"][0]), "Batched:", torch.equal(out_b["sequences"][0], ref_1["sequences"][0]))
-print("NB vs Batched equal?", torch.equal(
-    out_nb["sequences"][0], out_b["sequences"][0]))
-# print("NB text:", tokenizer.decode(out_nb["sequences"][0]))
-# print("B  text:", tokenizer.decode(out_b["sequences"][0]))
-
-# %%
-# Pick any 4 samples (no identical-length constraint)
-four = dataset[:4]
-toks_batch = [d["subsequence_tokens"] for d in four]
-
-# Choose one layer/feature and a strong alpha to make effects obvious
-layer_idx = list(layer2features.keys())[0]
-fidx = next(iter(layer2featuresidcs[layer_idx].keys()))
-vec = layer2features[layer_idx][fidx]
-alpha = 1.5
-seed = 123
-n_new = 30
-pad_id = tokenizer.pad_token_id
-
-
-@torch.no_grad()
-def strip_left_pad(row, pad_id):
-    row = torch.as_tensor(row)
-    k = 0
-    N = row.shape[0]
-    while k < N and row[k].item() == pad_id:
-        k += 1
-    return row[k:]
-
-
-# Batched reference and steered
-ref_b = gen_batch(lm, toks_batch, n_new_toks=n_new,
-                  do_sample=False, temperature=0.0, top_p=0.95, seed=seed)
-ste_b = steer_batch(lm, toks_batch,
-                    vecs=vec.unsqueeze(0),
-                    layer_idcs=[layer_idx],
-                    mode="all",
-                    alpha=alpha,
-                    n_new_toks=n_new,
-                    do_sample=False,
-                    temperature=0.0,
-                    top_p=0.95,
-                    seed=seed)
-
-any_changed = False
-for i in range(len(toks_batch)):
-    ref_i = strip_left_pad(ref_b["sequences"][i], pad_id)
-    ste_i = strip_left_pad(ste_b["sequences"][i], pad_id)
-
-    # Compare only generated tokens (drop prompt length for this sample)
-    prompt_len = len(toks_batch[i])
-    ref_gen = ref_i[prompt_len:]
-    ste_gen = ste_i[prompt_len:]
-
-    eq = torch.equal(ref_gen, ste_gen)
-    diff = 0 if eq else (ref_gen != ste_gen).sum().item()
-
-    any_changed = any_changed or (not eq)
-    print(f"[i={i}] ref==steered? {eq}  differing_positions={diff}")
-
-assert any_changed, "All steered generations equal reference; steering may not be taking effect."
 
 # %%
 # FIXME test feature list
