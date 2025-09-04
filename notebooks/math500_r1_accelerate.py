@@ -20,18 +20,18 @@ sys.path.append("/disk/u/troitskiid/projects/r1helpers")
 torch.set_float32_matmul_precision('high')
 
 # %%
-model_name = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
-torch_dtype = torch.bfloat16
+MODEL_NAME = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+TORCH_DTYPE = torch.bfloat16
 
-batch_size = 6
-n_new_toks = 5000
+BATCH_SIZE = 6
+N_NEW_TOKS = 5000
 
-do_sample = True
-temperature = 0.6
-top_p = 0.95
-seed = 42
+DO_SAMPLE = True
+TEMPERATURE = 0.6
+TOP_P = 0.95
+SEED = 42
 
-output_file = f"..results/llama8b_r1_math500_reference_batch{batch_size}_newtoks{n_new_toks}.jsonl"
+OUTPUT_FILE = f"..results/llama8b_r1_math500_reference_batch{BATCH_SIZE}_newtoks{N_NEW_TOKS}.jsonl"
 
 # %%
 
@@ -77,12 +77,12 @@ dataset = load_dataset("HuggingFaceH4/MATH-500")
 
 
 model, tokenizer, accelerator = load_model(
-    model_name, torch_dtype, device="auto")
+    MODEL_NAME, TORCH_DTYPE, device="auto")
 
 
 # %%
 # Text Generation
-if "Llama" in model_name:
+if "Llama" in MODEL_NAME:
     BOS = 128000
     USER = 128011
     ASSISTANT = 128012
@@ -90,7 +90,7 @@ if "Llama" in model_name:
     THINK_START = 128013
     THINK_END = 128014
     EOS = 128001
-elif "Qwen" in model_name:
+elif "Qwen" in MODEL_NAME:
     BOS = 151646
     USER = 151644
     ASSISTANT = 151645
@@ -99,7 +99,7 @@ elif "Qwen" in model_name:
     THINK_END = 151649
     EOS = 151643
 else:
-    raise ValueError(f"Unknown tokens for model {model_name}")
+    raise ValueError(f"Unknown tokens for model {MODEL_NAME}")
 
 
 def prompt_from_example(example, tokenizer):
@@ -185,8 +185,8 @@ def parse_answer(generated_text):
 # %%
 # evaluate in batches and store results in both dataframe and jsonl file
 # Remove old output file if it exists
-if os.path.exists(output_file):
-    os.remove(output_file)
+if os.path.exists(OUTPUT_FILE):
+    os.remove(OUTPUT_FILE)
 
 df = pd.DataFrame(columns=['problem', 'answer', 'generated_answer', 'correct'])
 n_correct = 0
@@ -211,15 +211,15 @@ def make_batches(indexed, batch_size):
 
 print("Starting generation")
 
-for batch_idx, idx_toks_batch in enumerate(tqdm(make_batches(all_indexed, batch_size), desc="Processing batches")):
+for batch_idx, idx_toks_batch in enumerate(tqdm(make_batches(all_indexed, BATCH_SIZE), desc="Processing batches")):
     toks_batch = [t for _, t in idx_toks_batch]
     outs = gen_batch(model,
                      toks_batch,
-                     n_new_toks=n_new_toks,
-                     do_sample=do_sample,
-                     temperature=temperature,
-                     top_p=top_p,
-                     seed=seed)
+                     n_new_toks=N_NEW_TOKS,
+                     do_sample=DO_SAMPLE,
+                     temperature=TEMPERATURE,
+                     top_p=TOP_P,
+                     seed=SEED)
 
     batch_results = []
     for (orig_idx, toks), out in enumerate(zip(idx_toks_batch, outs["sequences"])):
@@ -240,7 +240,7 @@ for batch_idx, idx_toks_batch in enumerate(tqdm(make_batches(all_indexed, batch_
         df = pd.concat([df, pd.DataFrame([example])], ignore_index=True)
         batch_results.append(example)
 
-    with open(output_file, 'a') as f:
+    with open(OUTPUT_FILE, 'a') as f:
         for result in batch_results:
             f.write(json.dumps(result) + '\n')
         f.flush()
@@ -255,5 +255,3 @@ for batch_idx, idx_toks_batch in enumerate(tqdm(make_batches(all_indexed, batch_
 if torch.cuda.is_available():
     torch.cuda.empty_cache()
 gc.collect()
-
-# %%
