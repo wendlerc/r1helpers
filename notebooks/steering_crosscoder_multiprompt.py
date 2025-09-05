@@ -55,7 +55,7 @@ base_path = "/disk/u/troitskiid/data/checkpoints/L1-Crosscoder"
 normalize = True
 
 layer2paths = {7: "L7R/cc_weights.pt",
-               15: "L15R/cc_weights.pt", 22: "L23R/cc_weights.pt"}
+               15: "L15R/cc_weights.pt", 23: "L23R/cc_weights.pt"}
 layer2features = {}
 for lidx, path in layer2paths.items():
     if lidx in layer2featuresidcs:
@@ -63,8 +63,6 @@ for lidx, path in layer2paths.items():
         layer2features[lidx] = d["decoder.weight"][1]/d["decoder.weight"][1].norm(
             dim=-1, keepdim=True) if normalize else d["decoder.weight"][1]
 
-# %%
-print(layer2features[15].shape)
 
 # %%
 

@@ -28,9 +28,11 @@ CROSSCODER_BASE_PATH = "/disk/u/troitskiid/data/checkpoints/L1-Crosscoder"
 LAYER_IDS = [15]
 FEATURE_IDS = [744, 31748, 25929, 188]
 STRENGTHS = [1.25]
+MODE = "all"
+MAX_STEERING_TOKENS = 50
 
-BATCH_SIZE = 6
-N_NEW_TOKS = 7500
+BATCH_SIZE = 2
+N_NEW_TOKS = 1024
 
 DO_SAMPLE = True
 TEMPERATURE = 0.6
@@ -83,8 +85,8 @@ def load_model(model_name, torch_dtype, device="auto"):
         model_name,
         torch_dtype=torch_dtype,
         device_map=device,
-        attn_implementation="sdpa",
-        low_cpu_mem_usage=True,
+        # attn_implementation="sdpa",
+        # low_cpu_mem_usage=True,
     )
     model.eval()
     return model, tokenizer, accelerator
@@ -115,6 +117,7 @@ def steer_batch_generation(model, token_sequences, steering_vectors,
                            n_new_tokens=10,
                            steering_strength=0.0,
                            threshold=-0.01,
+                           max_steering_tokens=None,  # New parameter
                            do_sample=True,
                            temperature=0.6,
                            top_p=0.95,
@@ -129,10 +132,11 @@ def steer_batch_generation(model, token_sequences, steering_vectors,
     steering_activation_count = torch.zeros(
         batch_size, dtype=torch.int64, device=model.device)
     generation_steps = 0  # counts S==1 steps
+    steered_token_count = 0  # New counter for tracking steered tokens
 
     @torch.no_grad()
-    def steering_hook(module, inputs, output, start_token_idx=None, steering_vector=None, strength=None, threshold=None):
-        nonlocal steering_activation_count, generation_steps
+    def steering_hook(module, inputs, output, start_token_idx=None, steering_vector=None, strength=None, threshold=None, max_steering_tokens=None):
+        nonlocal steering_activation_count, generation_steps, steered_token_count
         hidden_states = output[0] if isinstance(output, tuple) else output
         steering_vector_device = steering_vector.to(
             hidden_states.device, dtype=hidden_states.dtype)
@@ -161,6 +165,10 @@ def steer_batch_generation(model, token_sequences, steering_vectors,
             hidden_states_processed[:, start_position:,
                                     :] += token_norms * strength * vector
         else:
+            # Check if we've exceeded max steering tokens
+            if max_steering_tokens is not None and steered_token_count >= max_steering_tokens:
+                return output  # Skip steering
+
             # [B,D]
             current_hidden = hidden_states_processed[:, 0, :]
             current_norm = current_hidden.norm(dim=-1, keepdim=True)   # [B,1]
@@ -190,10 +198,14 @@ def steer_batch_generation(model, token_sequences, steering_vectors,
                     else:
                         hidden_states_processed[activation_mask, 0,
                                                 :] += current_norm[activation_mask] * strength * vector
-                steering_activation_count += activation_mask.to(
-                    steering_activation_count.dtype)
+                # Move steering_activation_count to the same device as activation_mask
+                steering_activation_count_device = steering_activation_count.to(
+                    hidden_states.device)
+                steering_activation_count_device += activation_mask.to(
+                    steering_activation_count_device.dtype)
 
             generation_steps += 1
+            steered_token_count += 1  # Increment the counter
 
         return output  # modify in-place
 
@@ -201,7 +213,8 @@ def steer_batch_generation(model, token_sequences, steering_vectors,
     hooks = [
         layers[layer_idx].register_forward_hook(
             partial(steering_hook, start_token_idx=start_token_idx,
-                    steering_vector=steering_vectors[layer_pos], strength=steering_strength, threshold=threshold)
+                    steering_vector=steering_vectors[layer_pos], strength=steering_strength,
+                    threshold=threshold, max_steering_tokens=max_steering_tokens)
         )
         for layer_pos, layer_idx in enumerate(layer_indices)
     ]
@@ -228,8 +241,9 @@ def steer_batch_generation(model, token_sequences, steering_vectors,
             top_p=top_p,
             pad_token_id=tokenizer.pad_token_id,
             eos_token_id=tokenizer.eos_token_id,
-            use_cache=True,
+            # use_cache=True,
             return_dict_in_generate=False,
+            # cache_implementation="static"
         )
     finally:
         for hook in hooks:
@@ -247,22 +261,22 @@ def decode_batch_generation(output_ids, input_ids, tokenizer):
     """Extract generated text from batched generation with right-aligned padding."""
     if isinstance(output_ids, torch.Tensor):
         output_ids = output_ids.tolist()
-    
+
     pad_id = tokenizer.pad_token_id
-    
+
     # Skip any padding tokens at the beginning
     lp = 0
     while lp < len(output_ids) and output_ids[lp] == pad_id:
         lp += 1
-    
+
     # For right-aligned batching, the input starts after the padding
     # Extract everything after the input
     generated_tokens = output_ids[lp + len(input_ids):]
-    
+
     # Remove any padding tokens from the end
     while generated_tokens and generated_tokens[-1] == pad_id:
         generated_tokens.pop()
-    
+
     return tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
 
@@ -293,7 +307,7 @@ normalize_vectors = True
 layer_to_checkpoint_paths = {
     7: "L7R/cc_weights.pt",
     15: "L15R/cc_weights.pt",
-    22: "L23R/cc_weights.pt"
+    23: "L23R/cc_weights.pt"
 }
 
 layer_to_feature_vectors = {}
@@ -303,6 +317,7 @@ for layer_idx, checkpoint_path in layer_to_checkpoint_paths.items():
             CROSSCODER_BASE_PATH, checkpoint_path), map_location="cpu")
         layer_to_feature_vectors[layer_idx] = d["decoder.weight"][1] / d["decoder.weight"][1].norm(
             dim=-1, keepdim=True) if normalize_vectors else d["decoder.weight"][1]
+
 
 # %%
 # Main evaluation loop
@@ -314,26 +329,26 @@ for layer_idx in LAYER_IDS:
     if layer_idx not in layer_to_feature_vectors:
         print(f"Layer {layer_idx} not found in layer_to_feature_vectors")
         continue
-        
+
     for feature_id in FEATURE_IDS:
         if feature_id >= layer_to_feature_vectors[layer_idx].shape[0]:
             print(f"Feature {feature_id} not found for layer {layer_idx}")
             continue
-            
+
         for strength in STRENGTHS:
             # Skip strength=0 as it's the same as original
             if strength == 0:
                 print(f"Strength {strength} is 0, skipping")
                 continue
-                
+
             # Track accuracy for this configuration
             correct_count = 0
             total_count = 0
-            
+
             # Create separate output file for this combination
             output_filename = f"../results/llama8b_r1_math500_steering_layer{layer_idx}_feature{feature_id}_strength{strength}_seed{SEED}.jsonl"
             os.makedirs(os.path.dirname(output_filename), exist_ok=True)
-            
+
             # If file exists, create a new one with timestamp or counter
             if os.path.exists(output_filename):
                 import time
@@ -341,47 +356,52 @@ for layer_idx in LAYER_IDS:
                 base_name, ext = os.path.splitext(output_filename)
                 output_filename = f"{base_name}_{timestamp}{ext}"
                 print(f"File exists, creating new file: {output_filename}")
-            
+
             # Process all batches for this steering configuration
             for batch_start in tqdm(range(0, len(sampled_entries), BATCH_SIZE), desc=f"Layer {layer_idx}, Feature {feature_id}, Strength {strength}"):
                 batch_end = min(batch_start + BATCH_SIZE, len(sampled_entries))
                 batch_entries = sampled_entries[batch_start:batch_end]
-                
+
                 # Extract token sequences for this batch
-                batch_token_sequences = [entry.get('tokens_before', []) for entry in batch_entries]
-                
+                batch_token_sequences = [
+                    entry.get('tokens_before', []) for entry in batch_entries]
+
                 # Generate steered batch response for this configuration
                 steered_batch_output = steer_batch_generation(
-                    model, batch_token_sequences, 
-                    steering_vectors=[layer_to_feature_vectors[layer_idx][feature_id]],
+                    model, batch_token_sequences,
+                    steering_vectors=layer_to_feature_vectors[layer_idx][feature_id].unsqueeze(
+                        0),
                     layer_indices=[layer_idx],
-                    steering_mode="all",
+                    steering_mode=MODE,
                     steering_strength=strength,
+                    max_steering_tokens=MAX_STEERING_TOKENS,
                     n_new_tokens=N_NEW_TOKS,
                     do_sample=DO_SAMPLE,
                     temperature=TEMPERATURE,
                     top_p=TOP_P,
                     seed=SEED
                 )
-                
+
                 # Process each item in the batch
                 for i, entry in enumerate(batch_entries):
                     token_sequence = batch_token_sequences[i]
-                    
+
                     # Extract the generated text using our batch-aware function
                     output_sequence = steered_batch_output["sequences"][i]
                     steered_generated_text = decode_batch_generation(
                         output_sequence, token_sequence, tokenizer
                     )
-                    
-                    steered_parsed_answer = parse_answer(steered_generated_text)
-                    steered_correct = grade_answer(steered_parsed_answer, entry.get('answer', ''))
-                    
+
+                    steered_parsed_answer = parse_answer(
+                        steered_generated_text)
+                    steered_correct = grade_answer(
+                        steered_parsed_answer, entry.get('answer', ''))
+
                     # Update accuracy tracking
                     if steered_correct:
                         correct_count += 1
                     total_count += 1
-                    
+
                     # Create steered result entry
                     steered_result = {
                         'unique_id': entry.get('unique_id', ''),
@@ -393,17 +413,18 @@ for layer_idx in LAYER_IDS:
                         'answer': entry.get('answer', ''),
                         'correct': steered_correct
                     }
-                    
+
                     with open(output_filename, 'a') as output_file:
                         output_file.write(json.dumps(steered_result) + '\n')
-                
+
                 # Memory cleanup per batch
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
-            
+
             # Print final accuracy for this configuration
             accuracy = correct_count / total_count if total_count > 0 else 0.0
-            print(f"Final accuracy for Layer {layer_idx}, Feature {feature_id}, Strength {strength}: {correct_count}/{total_count} = {accuracy:.3f}")
+            print(
+                f"Final accuracy for Layer {layer_idx}, Feature {feature_id}, Strength {strength}: {correct_count}/{total_count} = {accuracy:.3f}")
 
 # Final cleanup
 if torch.cuda.is_available():
@@ -411,5 +432,5 @@ if torch.cuda.is_available():
 gc.collect()
 
 print("Batch processing completed!")
-#
+
 # %%
