@@ -26,13 +26,14 @@ DATASET_PATH = "/disk/u/troitskiid/projects/r1helpers/results/llama8b_r1_referen
 CROSSCODER_BASE_PATH = "/disk/u/troitskiid/data/checkpoints/L1-Crosscoder"
 
 LAYER_IDS = [15]
-FEATURE_IDS = [744, 31748, 25929, 188]
-STRENGTHS = [1.25]
+# FEATURE_IDS = [744, 31748, 25929, 188]
+FEATURE_IDS = [31748]
+STRENGTHS = [1.5]
 MODE = "all"
-MAX_STEERING_TOKENS = 50
+MAX_STEERING_TOKENS = 100 # this is how many tokens we will apply the steering vectors to
 
-BATCH_SIZE = 2
-N_NEW_TOKS = 1024
+BATCH_SIZE = 3
+N_NEW_TOKS = 7500
 
 DO_SAMPLE = True
 TEMPERATURE = 0.6
@@ -346,7 +347,7 @@ for layer_idx in LAYER_IDS:
             total_count = 0
 
             # Create separate output file for this combination
-            output_filename = f"../results/llama8b_r1_math500_steering_layer{layer_idx}_feature{feature_id}_strength{strength}_seed{SEED}.jsonl"
+            output_filename = f"../results/llama8b_r1_math500_steering_layer{layer_idx}_feature{feature_id}_strength{strength}_steer{MAX_STEERING_TOKENS}_seed{SEED}.jsonl"
             os.makedirs(os.path.dirname(output_filename), exist_ok=True)
 
             # If file exists, create a new one with timestamp or counter
